@@ -1,84 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twisted Funnel + Vehicle Advisor</title>
-<style>
-  body { background:#0c0e15; color:white; font-family:Arial, sans-serif; padding:15px; }
-  h1 { text-align:center; color:#7da8ff; margin-bottom:20px; }
-  .card { background:#161925; padding:20px; border-radius:16px; margin-bottom:20px; box-shadow:0 0 12px #000; }
-  label { display:block; margin-top:14px; font-size:14px; color:#c6ceff; }
-  input { width:100%; padding:10px; margin-top:6px; border:none; border-radius:10px; background:#1f2333; color:white; font-size:16px; }
-  button { width:100%; padding:14px; margin-top:25px; background:#4e5cff; border:none; border-radius:14px; font-size:18px; font-weight:bold; box-shadow:0 0 10px #4e5cff; }
-  .result { background:#10131d; padding:20px; border-radius:16px; font-size:18px; text-align:center; box-shadow:0 0 10px #000; }
-  .veh-list { text-align:left; margin-top:10px; }
-  .veh-tier { color:#7aa8ff; font-weight:bold; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twisted Tornado Dashboard</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #0b1e3d, #1f3a6f);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2em;
+      color: #ffdd57;
+      text-shadow: 2px 2px 4px #000;
+    }
+    .input-section {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+    .input-section input {
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: none;
+      background: #ffdd57;
+      color: #000;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ffc107;
+    }
+    .cards-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      width: 95%;
+      max-width: 1200px;
+    }
+    .tornado-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      width: 250px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+    .tornado-card:hover {
+      transform: scale(1.05);
+    }
+    .tornado-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    .vehicle-list {
+      margin-top: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    footer {
+      margin-top: auto;
+      padding: 10px;
+      font-size: 0.8em;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-  <h1>Twisted Funnel & Vehicle Advisor</h1>
-  <div class="card">
-    <label>Temperature (°F)</label><input id="temp" type="number">
-    <label>Dewpoint (°F)</label><input id="dew" type="number">
-    <label>CAPE (J/kg)</label><input id="cape" type="number">
-    <label>3CAPE (J/kg)</label><input id="cape3" type="number">
-    <label>0–3km Lapse Rate (°C/km)</label><input id="lap03" type="number">
-    <label>3–6km Lapse Rate (°C/km)</label><input id="lap36" type="number">
-    <label>PWAT (in)</label><input id="pwat" type="number" step="0.1">
-    <label>SRH (m²/s²)</label><input id="srh" type="number">
-    <label>Surface RH (%)</label><input id="rh" type="number">
-    <label>STP</label><input id="stp" type="number" step="0.1">
-    <label>VTP</label><input id="vtp" type="number" step="0.1">
-    <button onclick="advise()">Get Funnel + Vehicle Advice</button>
-    <div id="output" class="result"></div>
-  </div>
+  <header>
+    <h1>Twisted Tornado Dashboard</h1>
+  </header>
 
-<script>
-function advise() {
-  const cape = Number(cape.value);
-  const srh = Number(srh.value);
-  const stpV = Number(stp.value);
-  const rhV = Number(rh.value);
-  const lap = Number(lap03.value);
-  const cape3v = Number(cape3.value);
-  const vtp = Number(vtp.value);
+  <section class="input-section">
+    <input type="number" id="temperature" placeholder="Temperature (°C)" />
+    <input type="number" id="pressure" placeholder="Pressure (hPa)" />
+    <input type="number" id="humidity" placeholder="Humidity (%)" />
+    <button onclick="calculateTornado()">Predict Tornado</button>
+  </section>
 
-  let funnel = "Unknown";
-  // funnel logic (heuristic)
-  if (cape > 4500 && srh > 400 && stpV > 7 && vtp > 2) funnel = "Wedge";
-  else if (cape > 3200 && srh > 250 && stpV > 4) funnel = "Stovepipe";
-  else if (cape > 2500 && cape3v > 200 && srh > 150) funnel = "Cone";
-  else if (srh > 500 && stpV > 3) funnel = "Multi-Vortex";
-  else if (cape > 1800 && lap > 7.5 && rhV < 60) funnel = "Rope";
-  else if (cape < 800 && rhV < 50) funnel = "Landspout / Weak";
-  else funnel = "Weak / Unstable";
+  <section class="cards-container" id="cardsContainer">
+    <!-- Tornado cards will appear here -->
+  </section>
 
-  // vehicle advice tiers
-  let safe = [], risky = [], avoid = [];
+  <footer>
+    Vehicle data sourced from Twisted Fandom.
+  </footer>
 
-  if (["Wedge","Multi-Vortex"].includes(funnel)) {
-    safe.push("TIV-2, Dominator 2 (heavy interceptors)");
-    risky.push("Basic Dealership / Unarmored vehicles — **avoid**");
-    avoid.push("Civilians & pickups with low wind-threshold");
-  } else if (["Stovepipe","Cone"].includes(funnel)) {
-    safe.push("Mid-tier interceptors or heavy pickups with mesonet (if upgraded)");
-    risky.push("Light civilian vehicles — only for probes / distance-observing");
-    avoid.push("Driving directly through strong core");
-  } else if (["Rope","Landspout / Weak","Weak / Unstable"].includes(funnel)) {
-    safe.push("Standard dealership or pickup cars (fast travel / probe placement)");
-    risky.push("Interceptors — overkill but okay");
-  } else {
-    risky.push("Use probes or radar — avoid intercepting");
-  }
+  <script>
+    const tornadoTypes = [
+      { name: 'Cone', baseProbability: 0.3, icon: '🌀', vehicles: [
+        { name: 'Truck', threshold: 50 },
+        { name: 'Sedan', threshold: 30 },
+        { name: 'ATV', threshold: 40 }
+      ] },
+      { name: 'Wedge', baseProbability: 0.2, icon: '🌪️', vehicles: [
+        { name: 'SUV', threshold: 40 },
+        { name: 'Jeep', threshold: 35 },
+        { name: 'Truck', threshold: 55 }
+      ] },
+      { name: 'Rope', baseProbability: 0.25, icon: '🌀', vehicles: [
+        { name: 'Motorbike', threshold: 20 },
+        { name: 'Sedan', threshold: 25 },
+        { name: 'ATV', threshold: 30 }
+      ] },
+      { name: 'Multi-Vortex', baseProbability: 0.15, icon: '🌪️', vehicles: [
+        { name: 'SUV', threshold: 60 },
+        { name: 'Truck', threshold: 70 },
+        { name: 'Jeep', threshold: 65 }
+      ] },
+      { name: 'Landspout', baseProbability: 0.1, icon: '🌀', vehicles: [
+        { name: 'Sedan', threshold: 20 },
+        { name: 'ATV', threshold: 25 }
+      ] }
+    ];
 
-  document.getElementById('output').innerHTML = 
-    "Predicted Funnel Type: <strong style='color:#7da8ff'>" + funnel + "</strong><br><br>" +
-    "<span class='veh-tier'>Recommended Vehicle Strategy:</span><br>" +
-    "- Safe for intercept/drive-near: " + (safe.length ? safe.join(", ") : "None") + "<br>" +
-    "- Risky (use only for probe placement or stay away): " + (risky.length ? risky.join(", ") : "None") + "<br>" +
-    "- Avoid driving near: " + (avoid.length ? avoid.join(", ") : "None");
-}
-</script>
+    function calculateProbability(temp, pressure, humidity, baseProb) {
+      // Simple thermodynamics influence formula
+      let prob = baseProb + (temp - 20) * 0.01 + (humidity - 50) * 0.005 + (1013 - pressure) * 0.002;
+      prob = Math.max(0, Math.min(prob, 1));
+      return (prob * 100).toFixed(1);
+    }
+
+    function calculateTornado() {
+      const temp = parseFloat(document.getElementById('temperature').value);
+      const pressure = parseFloat(document.getElementById('pressure').value);
+      const humidity = parseFloat(document.getElementById('humidity').value);
+      const container = document.getElementById('cardsContainer');
+      container.innerHTML = '';
+
+      tornadoTypes.forEach(t => {
+        const prob = calculateProbability(temp, pressure, humidity, t.baseProbability);
+        const card = document.createElement('div');
+        card.className = 'tornado-card';
+
+        const icon = document.createElement('div');
+        icon.className = 'tornado-icon';
+        icon.textContent = t.icon;
+
+        const title = document.createElement('h2');
+        title.textContent = t.name;
+
+        const probability = document.createElement('p');
+        probability.textContent = `Probability: ${prob}%`;
+
+        const vehicleList = document.createElement('div');
+        vehicleList.className = 'vehicle-list';
+        vehicleList.innerHTML = '<strong>Safe Vehicles:</strong><br>';
+        t.vehicles.forEach(v => {
+          if (prob >= v.threshold) {
+            vehicleList.innerHTML += `✅ ${v.name} (Threshold: ${v.threshold}%)<br>`;
+          } else {
+            vehicleList.innerHTML += `❌ ${v.name} (Threshold: ${v.threshold}%)<br>`;
+          }
+        });
+
+        card.appendChild(icon);
+        card.appendChild(title);
+        card.appendChild(probability);
+        card.appendChild(vehicleList);
+        container.appendChild(card);
+      });
+    }
+  </script>
 </body>
 </html>
